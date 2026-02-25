@@ -1,0 +1,37 @@
+#!/bin/sh
+set -eu
+
+: "${OPENAI_API_KEY:?Set OPENAI_API_KEY first}"
+MODEL="${OPENAI_MODEL:-gpt-4o-mini}"
+TZ_DEFAULT="${TZ_DEFAULT:-America/New_York}"
+
+IN="$(cat)"
+if [ -z "${IN#"${IN%%[![:space:]]*}"}" ]; then
+  echo "paste2text: empty input" >&2
+  exit 2
+fi
+
+RESP="$(
+  curl -sS https://api.openai.com/v1/responses \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg model "$MODEL" --arg tz "$TZ_DEFAULT" --arg input "$IN" '
+      {
+        model: $model,
+        instructions:
+          "Convert the user input into either iCalendar (.ics) OR vCard (.vcf) CONTENT.\n" +
+          "Output ONLY the raw file content. No commentary. No code fences.\n" +
+          "Timezone default if unspecified: " + $tz + ".",
+        input: $input
+      }'
+    )"
+)"
+
+printf '%s' "$RESP" | jq -r '
+  [ .output[]?
+    | select(.type=="message")
+    | .content[]?
+    | select(.type=="output_text")
+    | .text
+  ] | join("")
+'

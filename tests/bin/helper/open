@@ -1,0 +1,2 @@
+#!/bin/sh
+# Mock open for paste2item tests (must be named open to override in PATH). No-op.

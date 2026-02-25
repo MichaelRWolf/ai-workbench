@@ -1,0 +1,18 @@
+#!/bin/sh
+# Mock curl for paste2item tests (must be named curl to override in PATH).
+# Set MOCK_CURL_RESPONSE=ics|vcf|invalid
+case "${MOCK_CURL_RESPONSE:-invalid}" in
+  ics)
+    jq -n '
+      { output: [ { type: "message", content: [ { type: "output_text", text: "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//test//\nBEGIN:VEVENT\nDTSTART:20250101T120000\nDTEND:20250101T130000\nSUMMARY:Test\nEND:VEVENT\nEND:VCALENDAR" } ] } ] }
+    '
+    ;;
+  vcf)
+    jq -n '
+      { output: [ { type: "message", content: [ { type: "output_text", text: "BEGIN:VCARD\nVERSION:3.0\nFN:Test Contact\nN:Contact;Test;;;\nEND:VCARD" } ] } ] }
+    '
+    ;;
+  *)
+    jq -n '{ output: [ { type: "message", content: [ { type: "output_text", text: "not valid ics or vcf" } ] } ] }'
+    ;;
+esac
